@@ -11,8 +11,10 @@ if(option == "show"){
 }
 
 if(option == "move"){
-	tsmanager.moveEpisodes(function(){
-		console.log("Done");
+	tsmanager.moveEpisodes(function(result){
+		if(result){
+			console.log("Moved " + result.length + " episodes");
+		}
 	});
 }
 
