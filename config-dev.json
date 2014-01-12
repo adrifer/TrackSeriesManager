@@ -1,10 +1,15 @@
 {
   "downloads": "D:/Descargas2",
   "series": "D:/Series2",
+  "subtitles": false,
   "ext": [
     ".mp4",
     ".mkv"
   ],
+  "templates": {
+  	"season": "{{season}}ª Temporada",
+  	"episode": "{{serie}} {{season}}x{{episode}} - {{title}}"
+  },
   "trackseries": {
     "username": "tracker086",
     "password": "123456",

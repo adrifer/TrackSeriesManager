@@ -1,6 +1,7 @@
 "use strict";
 
 var rdepisode = require('./readdirmedia'),
+	fs = require('fs-extra'),
 	path = require('path'),
 	nconf = require('nconf'),
 	_ = require('underscore'),
@@ -9,6 +10,7 @@ var rdepisode = require('./readdirmedia'),
 nconf.file("config-dev.json");
 
 var trackseries = nconf.get("trackseries");
+var templates = nconf.get("templates");
 
 var seriesInfo = [];
 
@@ -42,12 +44,14 @@ getToken(trackseries, function(token){
 					console.log("");
 				});
 
+				//From here start the process to move files
+
 				var getSeriesTasks = [];
 				episodes.forEach(function(item){
 					getSeriesTasks.push(function(next){
 						var info = _.findWhere(seriesInfo, {id: item.serieid});
 						if(!info){
-							getSeriesInfo(trackseries.token, item.serieid, function(info){
+							getSeriesInfo(item.serieid, function(info){
 								seriesInfo.push(info);
 								item.title = findEpisodeName(info, item.season, item.episode);
 								next(null, info);
@@ -60,7 +64,61 @@ getToken(trackseries, function(token){
 				});
 
 				executeTask(getSeriesTasks, function(err, result){
-					episodes.forEach(function(item){ console.log(item.name + " / " + item.title)});
+					var toMove = episodes;
+					if(nconf.get("subtitles")){
+						toMove = episodesSub;
+					}
+					var moveTask = [];
+
+					toMove.forEach(function(file){
+						moveTask.push(function(next){
+							var dir = nconf.get("series") + '/' + file.serie + '/';
+							var seasonPath = templates.season.replace("{{season}}", file.season);
+							dir += seasonPath + '/';
+							fs.mkdirs(dir, function(err){
+								var filename = templates.episode.replace("{{serie}}", file.serie)
+												.replace("{{season}}", file.season)
+												.replace("{{episode}}", file.episode)
+												.replace("{{title}}", file.title)
+												.replace(/\?/, '');
+								dir += filename;
+								console.log("Moving episode: " + filename + file.ext);
+								fs.copy(file.fullname, dir + file.ext, function(err){
+									if(err){
+										console.log(err);
+										next(null, dir);
+									}else{
+										fs.remove(file.fullname, function(err){
+											if(file.subtitle){
+												console.log("Episode moved: " + filename + file.ext);
+												console.log("Moving subtitle: " + filename + file.subtitle.ext);
+												fs.copy(file.subtitle.fullname, dir + file.subtitle.ext, function(err){
+													if(err){
+														console.log(err);
+														next(null,dir);
+													}else{
+														fs.remove(file.subtitle.fullname, function(err){
+															console.log("Subtitle moved: " + filename + file.subtitle.ext);
+															next(null,dir);
+														});
+														
+													}
+												});
+											}else{
+												console.log("Episode moved: " + filename + file.ext);
+												next(null, dir);
+											}
+										});
+									}
+								});
+								
+							});
+							
+						});
+					});
+					executeTask(moveTask, function (err, result){
+						console.log("Terminado");
+					});
 				});
 			});
 		});
@@ -197,12 +255,9 @@ function executeTask(tasks, final){
 	execTask(0);
 }
 
-function getSeriesInfo(token, id, callback){
+function getSeriesInfo(id, callback){
 	var options = {
-		url: 'http://trackseriesapi.azurewebsites.net/v1/Series/' + id + '/All',
-		headers: {
-			'Authorization': 'bearer ' + token
-		}
+		url: 'http://trackseriesapi.azurewebsites.net/v1/Series/' + id + '/All'
 	}
 
     request(options, function(error, response, body){
