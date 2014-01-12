@@ -38,6 +38,18 @@ getToken(trackseries, function(token){
 					console.log(item.serie + " " + item.season + "x" + item.episode);
 					console.log("");
 				});
+
+				var getSeriesTasks = [];
+				episodes.forEach(function(item){
+					getSeriesTasks.push(function(next){
+						next(null, item.name);
+					});
+				});
+
+				console.log("antes de ejecutar tasks");
+				executeTask(getSeriesTasks, function(err, result){
+					console.log(result);
+				});
 			});
 		});
 	});
@@ -81,7 +93,7 @@ function getSeries(token, callback){
     });
 }
 
-function limpiar(text){
+function cleanText(text){
 	text = text.replace(/ *\([^)]*\) */g, '');
 	return text.replace(/[-[\]{}()*+?.,'´\\^$|#\s]/g, '').toLowerCase();
 }
@@ -90,7 +102,7 @@ function extractSerie(files, series){
 	var result = [];
 	files.forEach(function(item){
 		for(var i=0; i<series.length; i++){
-			if(limpiar(item.name).indexOf(limpiar(series[i].name)) != -1){
+			if(cleanText(item.name).indexOf(cleanText(series[i].name)) != -1){
 				item.serieid = series[i].id;
 				item.serie = series[i].name;
 				result.push(item);
@@ -102,28 +114,28 @@ function extractSerie(files, series){
 }
 
 function extractSeasonAndEpisode(files){
-	//Patron S1E01
+	// S1E01 Pattern
     var pattern1 = new RegExp(".*?(s|S)(\\d{1,2})(e|E)(\\d{1,2})");
-	//Patron 1x01
+	// 1x01 Pattern
     var pattern2 = new RegExp(".*?(\\d{1,2})x(\\d{1,2})");
-    //Patron 101
+    // 101 Pattern
     var pattern3 = new RegExp(".*?(\\d{3,4})");
 
     var result = [];
 
     files.forEach(function(file){
-    	if(pattern1.test(limpiar(file.name))){
-	    	var match = limpiar(file.name).match(pattern1);
+    	if(pattern1.test(cleanText(file.name))){
+	    	var match = cleanText(file.name).match(pattern1);
 	    	file.season = parseInt(match[2]);
 	    	file.episode = parseInt(match[4]);
 	    	result.push(file);
-	    }else if(pattern2.test(limpiar(file.name))){
-	    	var match = limpiar(file.name).match(pattern2);
+	    }else if(pattern2.test(cleanText(file.name))){
+	    	var match = cleanText(file.name).match(pattern2);
 	    	file.season = parseInt(match[1]);
 	    	file.episode = parseInt(match[2]);
 	    	result.push(file);
-	    }else if(pattern3.test(limpiar(file.name))){
-	    	var match = limpiar(file.name).match(pattern3);
+	    }else if(pattern3.test(cleanText(file.name))){
+	    	var match = cleanText(file.name).match(pattern3);
 	    	var resultado = parseInt(match[1]);
 	    	if(resultado.length == 3){
 	    		file.season = resultado[0];
@@ -159,4 +171,25 @@ function pairWithSubtitles(episodes, subtitles){
 		subtitles.splice(subtitles.indexOf(item),1);
 	});
 	return result;
+}
+
+function executeTask(tasks, final){
+	var length = tasks.length;
+	var result = [];
+
+	if(!length) return final();
+
+	function execTask(i){
+		tasks[i](function(err, value){
+			result.push(value);
+			if(err) return final(err);
+			if(i < length - 1){
+				return execTask(i+1);
+			}
+			return final(null, result);
+		});
+	}
+
+	execTask(0);
+
 }
