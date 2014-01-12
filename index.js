@@ -5,23 +5,25 @@ var rdepisode = require('./readdirmedia'),
 	nconf = require('nconf'),
 	request = require('request');
 
-nconf.file("config.json");
+nconf.file("config-dev.json");
 
-getToken(nconf.get("token"), nconf.get("username"), nconf.get("password"), function(token){
+var trackseries = nconf.get("trackseries");
+
+getToken(trackseries, function(token){
 	getSeries(token, function(series){
 		rdepisode(nconf.get("downloads"), nconf.get("ext"), function (err, files){
 			rdepisode(nconf.get("downloads"), ['.srt'], function (err, subtitles){
-				var episodes = extraerSerie(files, series);
-				subtitles = extraerSerie(subtitles, series);
+				var episodes = extractSerie(files, series);
+				subtitles = extractSerie(subtitles, series);
 
-				episodes = extraerSeasonEpisode(episodes);
-				subtitles = extraerSeasonEpisode(subtitles);
+				episodes = extractSeasonAndEpisode(episodes);
+				subtitles = extractSeasonAndEpisode(subtitles);
 
-				var episodesSub = emparejarSubtitulos(episodes,subtitles);
-				console.log(files.length + " Media files encontrados.");
+				var episodesSub = pairWithSubtitles(episodes,subtitles);
+				console.log(files.length + " Media files found.");
 				console.log("");
 
-				console.log(episodes.length + " Episodios encontrados sin subtitulos.");
+				console.log(episodes.length + " Episodes without subtitles found.");
 				episodes.forEach(function(item){
 					console.log(item.name);
 					console.log(item.serie + " " + item.season + "x" + item.episode);
@@ -30,7 +32,7 @@ getToken(nconf.get("token"), nconf.get("username"), nconf.get("password"), funct
 
 				console.log("");
 
-				console.log(episodesSub.length + " Episodios con subtitulos encontrados");
+				console.log(episodesSub.length + " Episodes with subtitles found");
 				episodesSub.forEach(function(item){
 					console.log(item.name);
 					console.log(item.serie + " " + item.season + "x" + item.episode);
@@ -41,26 +43,26 @@ getToken(nconf.get("token"), nconf.get("username"), nconf.get("password"), funct
 	});
 });
 
-function getToken(token,username,password, callback)
+function getToken(trackseries, callback)
 {
-	if(token){
-		callback(token);
+	if(trackseries.token){
+		callback(trackseries.token);
 	}else{
 		var options = {
 			url: 'http://trackseriesapi.azurewebsites.net/v1/Account/Login',
 			method: 'POST',
 			form: {
-				username: username,
-				password: password,
+				username: trackseries.username,
+				password: trackseries.password,
 				grant_type: "password"
 			}
 		}
 		request(options, function(error, response, body){
 			var data = JSON.parse(body);
-			token = data.access_token;
-			nconf.set("token", tokenn);
+			trackseries.token = data.access_token;
+			nconf.set("trackseries", trackseries);
 			nconf.save();
-			callback(token)
+			callback(trackseries.token)
 		});
 	}
 }
@@ -84,7 +86,7 @@ function limpiar(text){
 	return text.replace(/[-[\]{}()*+?.,'´\\^$|#\s]/g, '').toLowerCase();
 }
 
-function extraerSerie(files, series){
+function extractSerie(files, series){
 	var result = [];
 	files.forEach(function(item){
 		for(var i=0; i<series.length; i++){
@@ -99,7 +101,7 @@ function extraerSerie(files, series){
 	return result;
 }
 
-function extraerSeasonEpisode(files){
+function extractSeasonAndEpisode(files){
 	//Patron S1E01
     var pattern1 = new RegExp(".*?(s|S)(\\d{1,2})(e|E)(\\d{1,2})");
 	//Patron 1x01
@@ -137,7 +139,7 @@ function extraerSeasonEpisode(files){
     return result;
 }
 
-function emparejarSubtitulos(episodes, subtitles){
+function pairWithSubtitles(episodes, subtitles){
 	var result = [];
 	var removeSub = [];
 	episodes.forEach(function(episode){
