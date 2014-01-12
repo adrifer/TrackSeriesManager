@@ -1,14 +1,14 @@
 {
   "downloads": "D:/Descargas2",
   "series": "D:/Series2",
-  "subtitles": false,
+  "subtitles": true,
   "ext": [
     ".mp4",
     ".mkv"
   ],
   "templates": {
-  	"season": "{{season}}ª Temporada",
-  	"episode": "{{serie}} {{season}}x{{episode}} - {{title}}"
+    "season": "{{season}}ª Temporada",
+    "episode": "{{serie}} {{season}}x{{episode}} - {{title}}"
   },
   "trackseries": {
     "username": "tracker086",

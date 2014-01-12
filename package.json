@@ -5,7 +5,7 @@
   "author": "tracker086",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js move"
   },
   "engines": {
     "node": ">=0.10.0"
