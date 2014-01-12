@@ -11,8 +11,7 @@
     "episode": "{{serie}} {{season}}x{{episode}} - {{title}}"
   },
   "trackseries": {
-    "username": "tracker086",
-    "password": "123456",
-    "token": "LmHCYnk9wpxGcQ6v33QeCgIYi1V6OsZw-k82TLpeygCZ0EQMhVhoaxPOQuZL4uHnzOCDQYWcEy4UXzypieVpxXimi222uEXJd1_u7ypLWufss20FyAim9QawBpfBqqsqmsUfmbcgW2lV7xGZP1ZBNq5O4Irq80mZ1W6y061XS8LAxyvYDl_PElAuF_RLj-aPEpUCZMcEOsYJLXJakf3hBKm5h-D8d90L1I2az_Hmu8FM6FN9KwgIePJw__Ok35teX6LzIetjyctoxFnUnmUOp82LSdvnNjH82R8HvuBh-rMW5XT-tzaHRY1WbePB5O_L2ex7b5KkHoqDYO9_k3ac4VbAKXiZVLOJCe52i_TxE5k8aoqSKamYTGbp9hBuzOqrTqAtvispIOuqAYBRdhzO-8I4Md7AvEHD5rWP32bwU0w"
+    "username": "",
+    "password": ""
   }
 }
