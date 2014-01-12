@@ -3,11 +3,14 @@
 var rdepisode = require('./readdirmedia'),
 	path = require('path'),
 	nconf = require('nconf'),
+	_ = require('underscore'),
 	request = require('request');
 
 nconf.file("config-dev.json");
 
 var trackseries = nconf.get("trackseries");
+
+var seriesInfo = [];
 
 getToken(trackseries, function(token){
 	getSeries(token, function(series){
@@ -19,7 +22,7 @@ getToken(trackseries, function(token){
 				episodes = extractSeasonAndEpisode(episodes);
 				subtitles = extractSeasonAndEpisode(subtitles);
 
-				var episodesSub = pairWithSubtitles(episodes,subtitles);
+				pairWithSubtitles(episodes,subtitles);
 				console.log(files.length + " Media files found.");
 				console.log("");
 
@@ -31,7 +34,7 @@ getToken(trackseries, function(token){
 				});
 
 				console.log("");
-
+				var episodesSub = episodes.filter(function(item){ return item.subtitle });
 				console.log(episodesSub.length + " Episodes with subtitles found");
 				episodesSub.forEach(function(item){
 					console.log(item.name);
@@ -42,13 +45,22 @@ getToken(trackseries, function(token){
 				var getSeriesTasks = [];
 				episodes.forEach(function(item){
 					getSeriesTasks.push(function(next){
-						next(null, item.name);
+						var info = _.findWhere(seriesInfo, {id: item.serieid});
+						if(!info){
+							getSeriesInfo(trackseries.token, item.serieid, function(info){
+								seriesInfo.push(info);
+								item.title = findEpisodeName(info, item.season, item.episode);
+								next(null, info);
+							});
+						}else{
+							item.title = findEpisodeName(info, item.season, item.episode);
+							next(null, info);
+						}
 					});
 				});
 
-				console.log("antes de ejecutar tasks");
 				executeTask(getSeriesTasks, function(err, result){
-					console.log(result);
+					episodes.forEach(function(item){ console.log(item.name + " / " + item.title)});
 				});
 			});
 		});
@@ -153,22 +165,14 @@ function extractSeasonAndEpisode(files){
 
 function pairWithSubtitles(episodes, subtitles){
 	var result = [];
-	var removeSub = [];
+
 	episodes.forEach(function(episode){
 		for(var i=0; i<subtitles.length; i++){
 			if(episode.serie === subtitles[i].serie && episode.episode === subtitles[i].episode && episode.season === subtitles[i].season){
 				episode.subtitle = subtitles[i];
-				result.push(episode);
-				removeSub.push(subtitles[i]);
+
 			}
 		}
-	});
-
-	result.forEach(function(item){
-		episodes.splice(episodes.indexOf(item),1);
-	});
-	removeSub.forEach(function(item){
-		subtitles.splice(subtitles.indexOf(item),1);
 	});
 	return result;
 }
@@ -191,5 +195,24 @@ function executeTask(tasks, final){
 	}
 
 	execTask(0);
+}
 
+function getSeriesInfo(token, id, callback){
+	var options = {
+		url: 'http://trackseriesapi.azurewebsites.net/v1/Series/' + id + '/All',
+		headers: {
+			'Authorization': 'bearer ' + token
+		}
+	}
+
+    request(options, function(error, response, body){
+    	var data = JSON.parse(body);
+    	callback(data);
+    });
+}
+
+function findEpisodeName(info, season, episode){
+	var season = _.findWhere(info.seasons, {seasonNumber: season});
+	var ep = _.findWhere(season.episodes, {number: episode});
+	return ep.title;
 }
