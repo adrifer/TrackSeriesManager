@@ -19,7 +19,10 @@ if(option == "move"){
 }
 
 if(option == "watchEpisodes"){
-	tsmanager.watchForEpisodes(function(){
+	tsmanager.watchForEpisodes(function(result){
+		if(result){
+			console.log("Moved " + result.length + " episodes");
+		}
 		console.log("Done: " + new Date());
 	});
 }

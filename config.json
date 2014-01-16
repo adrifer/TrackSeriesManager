@@ -6,6 +6,7 @@
     ".mp4",
     ".mkv"
   ],
+  "interval": 10,
   "templates": {
   	"season": "{{season}}ª Temporada",
   	"episode": "{{serie}} {{season}}x{{episode}} - {{title}}"
